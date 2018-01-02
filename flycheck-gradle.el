@@ -51,7 +51,7 @@
   :type '(repeat (string :tag "Flags"))
   :safe #'flycheck-string-list-p)
 
-(flycheck-define-checker gradle
+(flycheck-define-checker gradle-kotlin
   "Flycheck plugin for for Gradle."
   :command ("./gradlew"
             (eval (flycheck-gradle-warm-or-cold-build))
@@ -66,7 +66,26 @@
    ;; w: /kotlin/MainActivity.kt: (12, 13): Variable 'a' is never used
    (warning line-start "w: " (file-name) ": (" line ", " column "): "
             (message) line-end))
-  :modes (groovy-mode java-mode kotlin-mode)
+  :modes (kotlin-mode)
+  :predicate
+  (lambda ()
+    (funcall #'flycheck-gradle--gradle-available-p))
+  :working-directory
+  (lambda (checker)
+    (flycheck-gradle--find-gradleproj-directory checker)))
+
+(flycheck-define-checker gradle-java
+  "Flycheck plugin for for Gradle."
+  :command ("./gradlew"
+            (eval (flycheck-gradle-warm-or-cold-build))
+            "--warn"
+            "--console"
+            "plain"
+            (eval flycheck-gradle-extra-flags))
+  :error-patterns
+  (;; /java/MainActivity.java:11: error: ';' expected setContentView(R.layout.activity_main)
+   (error line-start (file-name) ":" line ": error: " (message) line-end))
+  :modes (java-mode)
   :predicate
   (lambda ()
     (funcall #'flycheck-gradle--gradle-available-p))
@@ -78,14 +97,23 @@
 (defun flycheck-gradle-setup ()
   "Setup Flycheck for Gradle."
   (interactive)
-  (unless (memq 'gradle flycheck-checkers)
-    (add-to-list 'flycheck-checkers 'gradle)
+  (unless (memq 'gradle-java flycheck-checkers)
+    (add-to-list 'flycheck-checkers 'gradle-java)
+    (if (memq 'meghanada-live flycheck-checkers)
+        ;; `flycheck-gradle-java' checker will go first.
+        (flycheck-add-next-checker 'gradle-java 'meghanada-live)
+      (with-eval-after-load 'meghanada
+        ;; `flycheck-java' will go first.
+        (flycheck-add-next-checker 'meghanada-live 'gradle-java))))
+
+  (unless (memq 'gradle-kotlin flycheck-checkers)
+    (add-to-list 'flycheck-checkers 'gradle-kotlin)
     (if (memq 'kotlin-ktlint flycheck-checkers)
-        ;; `flycheck-gradle' checker will go first.
-        (flycheck-add-next-checker 'gradle 'kotlin-ktlint)
+        ;; `flycheck-gradle-kotlin' checker will go first.
+        (flycheck-add-next-checker 'gradle-kotlin 'kotlin-ktlint)
       (with-eval-after-load 'flycheck-kotlin
         ;; `flycheck-kotlin' will go first.
-        (flycheck-add-next-checker 'kotlin-ktlint 'gradle)))))
+        (flycheck-add-next-checker 'kotlin-ktlint 'gradle-kotlin)))))
 
 (defun flycheck-gradle-warm-or-cold-build ()
   "Return whether or not gradle should be ran with clean."
@@ -135,8 +163,13 @@
 
 (defun flycheck-gradle-should-use-gradle-p (args)
   "Return whether or not flycheck should be advised to pass through gradle."
-  (and (eq (nth 0 args) 'gradle)
-       (memq major-mode '(java-mode groovy-mode kotlin-mode))))
+  (let ((checker (nth 0 args)))
+    (cond
+     ((eq checker 'gradle-kotlin)
+      (memq major-mode '(kotlin-mode)))
+     ((eq checker 'gradle-java)
+      (memq major-mode '(java-mode)))
+     (t nil))))
 
 (defun flycheck-gradle-find-gradlew-executable ()
   "Return path containing gradlew, if it exists."
