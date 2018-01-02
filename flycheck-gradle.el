@@ -54,8 +54,7 @@
 (flycheck-define-checker gradle
   "Flycheck plugin for for Gradle."
   :command ("./gradlew"
-            "clean"
-            "build"
+            (eval (flycheck-gradle-warm-or-cold-build))
             "--warn"
             "--console"
             "plain"
@@ -80,6 +79,12 @@
   "Setup Flycheck for Gradle."
   (interactive)
   (add-to-list 'flycheck-checkers 'gradle))
+
+(defun flycheck-gradle-warm-or-cold-build ()
+  "Return whether or not gradle should be ran with clean."
+  (if (flycheck-has-current-errors-p 'error)
+      '("build")
+    '("clean" "build")))
 
 (defun flycheck-gradle--gradle-available-p ()
   "Return whether or not current buffer is part of a Gradle project."
