@@ -78,7 +78,14 @@
 (defun flycheck-gradle-setup ()
   "Setup Flycheck for Gradle."
   (interactive)
-  (add-to-list 'flycheck-checkers 'gradle))
+  (unless (memq 'gradle flycheck-checkers)
+    (add-to-list 'flycheck-checkers 'gradle)
+    (if (memq 'kotlin-ktlint flycheck-checkers)
+        ;; `flycheck-gradle' checker will go first.
+        (flycheck-add-next-checker 'gradle 'kotlin-ktlint)
+      (with-eval-after-load 'flycheck-kotlin
+        ;; `flycheck-kotlin' will go first.
+        (flycheck-add-next-checker 'kotlin-ktlint 'gradle)))))
 
 (defun flycheck-gradle-warm-or-cold-build ()
   "Return whether or not gradle should be ran with clean."
