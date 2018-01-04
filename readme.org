@@ -1,0 +1,27 @@
+#+TITLE: Flycheck Gradle
+
+* flycheck-gradle
+  Flycheck extension for gradle projects.
+* Install
+  This isn't on melpa yet.
+
+  Clone it somewhere like "~/.emacs.d/fork/flycheck-gradle".
+
+  #+begin_src emacs-lisp :tangle yes
+(use-package flycheck-gradle
+  :load-path "~/.emacs.d/fork/flycheck-gradle"
+  :ensure nil
+  :commands (flycheck-gradle-setup)
+  :init
+  (mapc
+   (lambda (x)
+     (add-hook x #'flycheck-gradle-setup))
+   '(java-mode-hook kotlin-mode-hook)))
+  #+end_src
+* Screenshots
+** Kotlin
+   [[./screenshots/kotlin.png]]
+** Java
+   [[./screenshots/java.png]]
+* Help Wanted
+  Support other languages that use gradle as a build system (Scala/Groovy?).
