@@ -43,6 +43,8 @@
       (function-put #'when-let* 'lisp-indent-function 1))))
 
 ;;; Flycheck
+(defvar flycheck-gradle-modes '(java-mode kotlin-mode)
+  "A list of modes for use with `flycheck-gradle'.")
 
 (flycheck-def-executable-var gradle "gradle")
 
@@ -72,7 +74,7 @@
     (funcall #'flycheck-gradle--gradle-available-p))
   :working-directory
   (lambda (checker)
-    (flycheck-gradle--find-gradleproj-directory checker)))
+    (flycheck-gradle--find-gradle-project-directory checker)))
 
 (flycheck-define-checker gradle-java
   "Flycheck plugin for for Gradle."
@@ -91,12 +93,15 @@
     (funcall #'flycheck-gradle--gradle-available-p))
   :working-directory
   (lambda (checker)
-    (flycheck-gradle--find-gradleproj-directory checker)))
+    (flycheck-gradle--find-gradle-project-directory checker)))
 
 ;;;###autoload
 (defun flycheck-gradle-setup ()
   "Setup Flycheck for Gradle."
   (interactive)
+  (add-hook 'flycheck-before-syntax-check-hook
+            #'flycheck-gradle--set-flychecker-executable)
+
   (unless (memq 'gradle-java flycheck-checkers)
     (add-to-list 'flycheck-checkers 'gradle-java)
     (if (memq 'meghanada-live flycheck-checkers)
@@ -123,55 +128,31 @@
 
 (defun flycheck-gradle--gradle-available-p ()
   "Return whether or not current buffer is part of a Gradle project."
-  (flycheck-gradle--find-gradleproj-directory 'gradle))
+  (flycheck-gradle--find-build-gradle-file))
 
-(defun flycheck-gradle--find-gradleproj-directory (&optional _checker)
+(defun flycheck-gradle--find-gradle-project-directory (&optional _checker)
   "Return directory containing gradlew file or nil if file is not found."
-  (locate-dominating-file buffer-file-name "gradlew"))
+  (locate-dominating-file buffer-file-name "build.gradle"))
 
-;; HACK
-;; Flycheck doesn't seem to 'pass' this checker since it won't be able to find
-;; the gradlew file (sine it's project specific). Advise these functions so
-;; the check will pass.
-(defun flycheck-gradle-find-checker-executable (f &rest args)
-  "Return flycheck executable."
-  (if (flycheck-gradle-should-use-gradle-p args)
-      (or (flycheck-gradle-find-gradlew-executable)
-          (apply f args))
-    (apply f args)))
+(defun flycheck-gradle--find-build-gradle-file ()
+  "Return whether or not a build.gradle file can be found.
 
-(advice-add 'flycheck-find-checker-executable
-            :around 'flycheck-gradle-find-checker-executable)
+We use the presence of a build.gradle file to infer that this project is
+a gradle project."
+  (locate-dominating-file buffer-file-name "build.gradle"))
 
-(defun flycheck-gradle-verify-checker (f &rest args)
-  "Return whether or not flycheck should verify checker."
-  (if (flycheck-gradle-should-use-gradle-p args)
-      (or (flycheck-gradle-find-gradlew-executable)
-          (apply f args))
-    (apply f args)))
+(defun flycheck-gradle--set-flychecker-executable ()
+  "Set `flycheck-gradle' executable according to gradle location."
+  (when (and (memq major-mode flycheck-gradle-modes)
+             (flycheck-gradle--gradle-available-p))
+    (if-let* ((gradlew-path (flycheck-gradle--find-gradlew-executable)))
+        (progn
+          (setq flycheck-gradle-java-executable gradlew-path)
+          (setq flycheck-gradle-kotlin-executable gradlew-path))
+      (setq flycheck-gradle-java-executable "gradle")
+      (setq flycheck-gradle-kotlin-executable "gradle"))))
 
-(advice-add 'flycheck-verify-checker :around 'flycheck-gradle-verify-checker)
-
-(defun flycheck-gradle-may-use-checker (f &rest args)
-  "Return whether or not flycheck should use checker."
-  (if (flycheck-gradle-should-use-gradle-p args)
-      (or (flycheck-gradle-find-gradlew-executable)
-          (apply f args))
-    (apply f args)))
-
-(advice-add 'flycheck-may-use-checker :around 'flycheck-gradle-verify-checker)
-
-(defun flycheck-gradle-should-use-gradle-p (args)
-  "Return whether or not flycheck should be advised to pass through gradle."
-  (let ((checker (nth 0 args)))
-    (cond
-     ((eq checker 'gradle-kotlin)
-      (memq major-mode '(kotlin-mode)))
-     ((eq checker 'gradle-java)
-      (memq major-mode '(java-mode)))
-     (t nil))))
-
-(defun flycheck-gradle-find-gradlew-executable ()
+(defun flycheck-gradle--find-gradlew-executable ()
   "Return path containing gradlew, if it exists."
   (when-let* ((path (locate-dominating-file buffer-file-name "gradlew")))
     (concat path "gradlew")))
