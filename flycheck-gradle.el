@@ -148,10 +148,11 @@ a gradle project."
   "Set `flycheck-gradle' executable according to gradle location."
   (when (and (memq major-mode flycheck-gradle-modes)
              (flycheck-gradle--gradle-available-p))
-    (if-let* ((gradlew-path (flycheck-gradle--find-gradlew-executable)))
+    (if-let* ((gradlew-path (flycheck-gradle--find-gradlew-executable))
+              (gradlew-expanded-path (expand-file-name gradlew-path)))
         (progn
-          (setq flycheck-gradle-java-executable gradlew-path)
-          (setq flycheck-gradle-kotlin-executable gradlew-path))
+          (setq flycheck-gradle-java-executable gradlew-expanded-path)
+          (setq flycheck-gradle-kotlin-executable gradlew-expanded-path))
       (setq flycheck-gradle-java-executable "gradle")
       (setq flycheck-gradle-kotlin-executable "gradle"))))
 
