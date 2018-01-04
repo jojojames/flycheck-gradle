@@ -132,7 +132,10 @@
 
 (defun flycheck-gradle--find-gradle-project-directory (&optional _checker)
   "Return directory containing gradlew file or nil if file is not found."
-  (locate-dominating-file buffer-file-name "build.gradle"))
+  (or
+   (locate-dominating-file buffer-file-name "gradlew")
+   (locate-dominating-file buffer-file-name "settings.gradle")
+   (locate-dominating-file buffer-file-name "build.gradle")))
 
 (defun flycheck-gradle--find-build-gradle-file ()
   "Return whether or not a build.gradle file can be found.
