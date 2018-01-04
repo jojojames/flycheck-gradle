@@ -163,7 +163,7 @@ versions below 3 so it's safer choice to use error."
   (flycheck-gradle--find-build-gradle-file))
 
 (defun flycheck-gradle--find-gradle-project-directory (&optional _checker)
-  "Return directory containing gradlew file or nil if file is not found."
+  "Return directory containing project-related gradle files or nil."
   (or
    (locate-dominating-file buffer-file-name "gradlew")
    (locate-dominating-file buffer-file-name "settings.gradle")
