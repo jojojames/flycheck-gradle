@@ -42,6 +42,32 @@
       (function-put #'if-let* 'lisp-indent-function 2)
       (function-put #'when-let* 'lisp-indent-function 1))))
 
+;; Customization
+
+(defcustom flycheck-gradle-java-log-level "quiet"
+  "The log level gradle should use.
+
+This log level should match an actual gradle log level.
+
+e.g. warn, info, or a custom log level.
+
+Warn should be used to check for warnings but isn't available in gradle
+versions below 3 so it's safer choice to use error."
+  :type 'string
+  :group 'flycheck)
+
+(defcustom flycheck-gradle-kotlin-log-level "quiet"
+  "The log level gradle should use.
+
+This log level should match an actual gradle log level.
+
+e.g. warn, info, or a custom log level.
+
+Warn should be used to check for warnings but isn't available in gradle
+versions below 3 so it's safer choice to use error."
+  :type 'string
+  :group 'flycheck)
+
 ;;; Flycheck
 (defvar flycheck-gradle-modes '(java-mode kotlin-mode)
   "A list of modes for use with `flycheck-gradle'.")
@@ -56,8 +82,8 @@
 (flycheck-define-checker gradle-kotlin
   "Flycheck plugin for for Gradle."
   :command ("./gradlew"
-            (eval (flycheck-gradle-warm-or-cold-build))
-            "--warn"
+            (eval (flycheck-gradle--warm-or-cold-build))
+            (eval (flycheck-gradle--log-level))
             "--console"
             "plain"
             (eval flycheck-gradle-extra-flags))
@@ -79,8 +105,8 @@
 (flycheck-define-checker gradle-java
   "Flycheck plugin for for Gradle."
   :command ("./gradlew"
-            (eval (flycheck-gradle-warm-or-cold-build))
-            "--warn"
+            (eval (flycheck-gradle--warm-or-cold-build))
+            (eval (flycheck-gradle--log-level))
             "--console"
             "plain"
             (eval flycheck-gradle-extra-flags))
@@ -120,7 +146,13 @@
         ;; `flycheck-kotlin' will go first.
         (flycheck-add-next-checker 'kotlin-ktlint 'gradle-kotlin)))))
 
-(defun flycheck-gradle-warm-or-cold-build ()
+(defun flycheck-gradle--log-level ()
+  "Return default LOG level for gradle."
+  (if (eq major-mode 'java-mode)
+      (format "-%s" flycheck-gradle-java-log-level)
+    (format "-%s" flycheck-gradle-kotlin-log-level)))
+
+(defun flycheck-gradle--warm-or-cold-build ()
   "Return whether or not gradle should be ran with clean."
   (if (flycheck-has-current-errors-p 'error)
       '("build")
