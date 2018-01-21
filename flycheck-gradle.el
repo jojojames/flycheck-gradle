@@ -3,6 +3,8 @@
 ;; Copyright (C) 2017 James Nguyen
 
 ;; Authors: James Nguyen <james@jojojames.com>
+;; Maintainer: James Nguyen <james@jojojames.com>
+;; URL: https://github.com/jojojames/flycheck-gradle
 ;; Version: 1.0
 ;; Package-Requires: ((emacs "25.1") (flycheck "0.25"))
 ;; Keywords: languages gradle
