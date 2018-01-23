@@ -1,16 +1,13 @@
 #+TITLE: Flycheck Gradle
 
+[[https://melpa.org/#/flycheck-gradle][file:https://melpa.org/packages/flycheck-gradle-badge.svg]]
+
 * flycheck-gradle
   Flycheck extension for gradle projects.
 * Install
-  This isn't on melpa yet.
-
-  Clone it somewhere like "~/.emacs.d/fork/flycheck-gradle".
-
   #+begin_src emacs-lisp :tangle yes
 (use-package flycheck-gradle
-  :load-path "~/.emacs.d/fork/flycheck-gradle"
-  :ensure nil
+  :ensure t
   :commands (flycheck-gradle-setup)
   :init
   (mapc
