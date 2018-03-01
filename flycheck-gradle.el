@@ -73,6 +73,24 @@ versions below 3 so it's safer choice to use error."
   :type 'string
   :group 'flycheck)
 
+(defcustom flycheck-gradle-kotlin-compile-function 'flycheck-gradle-kotlin-compile->compile
+  "Function used to find build command for gradle.
+
+ex. `flycheck-gradle-kotlin-compile->compile' may return '\(\"clean\" \"build\"\)
+which will then change the final command to be \"gradle clean build\".
+
+The function should return a list of commands to pass to gradle. Look at
+`flycheck-gradle-kotlin-compile->compile' for more information."
+  :type 'function
+  :group 'flycheck)
+
+(defcustom flycheck-gradle-java-compile-function 'flycheck-gradle-compile->build
+  "Function used to find build command for gradle.
+
+Look at `flycheck-gradle-kotlin-compile-function' for more details."
+  :type 'function
+  :group 'flycheck)
+
 ;;; Flycheck
 (defvar flycheck-gradle-modes '(java-mode kotlin-mode)
   "A list of modes for use with `flycheck-gradle'.")
@@ -87,7 +105,7 @@ versions below 3 so it's safer choice to use error."
 (flycheck-define-checker gradle-kotlin
   "Flycheck plugin for for Gradle."
   :command ("./gradlew"
-            (eval (flycheck-gradle--warm-or-cold-build))
+            (eval (funcall flycheck-gradle-kotlin-compile-function))
             (eval (flycheck-gradle--log-level))
             "--console"
             "plain"
@@ -110,7 +128,7 @@ versions below 3 so it's safer choice to use error."
 (flycheck-define-checker gradle-java
   "Flycheck plugin for for Gradle."
   :command ("./gradlew"
-            (eval (flycheck-gradle--warm-or-cold-build))
+            (eval (funcall flycheck-gradle-java-compile-function))
             (eval (flycheck-gradle--log-level))
             "--console"
             "plain"
@@ -157,12 +175,6 @@ versions below 3 so it's safer choice to use error."
       (format "-%s" flycheck-gradle-java-log-level)
     (format "-%s" flycheck-gradle-kotlin-log-level)))
 
-(defun flycheck-gradle--warm-or-cold-build ()
-  "Return whether or not gradle should be ran with clean."
-  (if (flycheck-has-current-errors-p 'error)
-      '("build")
-    '("clean" "build")))
-
 (defun flycheck-gradle--gradle-available-p ()
   "Return whether or not current buffer is part of a Gradle project."
   (flycheck-gradle--find-build-gradle-file))
@@ -199,6 +211,24 @@ a gradle project."
   (flycheck-gradle-when-let*
       ((path (locate-dominating-file buffer-file-name "gradlew")))
     (concat path "gradlew")))
+
+;; Compile Target Functions
+(defun flycheck-gradle-compile->build ()
+  "Target gradle build."
+  (if (flycheck-has-current-errors-p 'error)
+      '("build")
+    '("clean" "build")))
+
+(defun flycheck-gradle-kotlin-compile->compile ()
+  "Target gradle compile for kotlin."
+  (let ((cmd (if (and
+                  buffer-file-name
+                  (string-match-p "test" buffer-file-name))
+                 "compileDebugUnitTestKotlin"
+               "compileReleaseKotlin")))
+    (if (flycheck-has-current-errors-p 'error)
+        `(,cmd)
+      `("clean" ,cmd))))
 
 (provide 'flycheck-gradle)
 ;;; flycheck-gradle.el ends here
