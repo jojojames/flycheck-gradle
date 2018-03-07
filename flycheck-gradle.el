@@ -91,6 +91,16 @@ Look at `flycheck-gradle-kotlin-compile-function' for more details."
   :type 'function
   :group 'flycheck)
 
+(defcustom flycheck-gradle-adjust-log-level-automatically nil
+  "Whether or not to adjust gradle's log level automatically.
+
+The log level variables are stored in `flycheck-gradle-java-log-level' and
+`flycheck-gradle-kotlin-log-level'.
+
+This needs to be set before `flycheck-gradle-setup' is called."
+  :type 'boolean
+  :group 'flycheck)
+
 ;;; Flycheck
 (defvar flycheck-gradle-modes '(java-mode kotlin-mode)
   "A list of modes for use with `flycheck-gradle'.")
@@ -150,6 +160,12 @@ Look at `flycheck-gradle-kotlin-compile-function' for more details."
   (interactive)
   (add-hook 'flycheck-before-syntax-check-hook
             #'flycheck-gradle--set-flychecker-executable)
+
+  (when flycheck-gradle-adjust-log-level-automatically
+    (mapc (lambda (mode)
+            (add-hook (intern (format "%S-hook" mode))
+                      #'flycheck-gradle-set-log-level--auto))
+          flycheck-gradle-modes))
 
   (unless (memq 'gradle-java flycheck-checkers)
     (add-to-list 'flycheck-checkers 'gradle-java)
@@ -211,6 +227,44 @@ a gradle project."
       ((path (locate-dominating-file buffer-file-name "gradlew")))
     (expand-file-name
      (concat path "gradlew"))))
+
+(defun flycheck-gradle-set-log-level--auto ()
+  "Automatically set the log level for gradle depending on gradle version."
+  (let ((buffer (current-buffer)))
+    (flycheck-gradle-when-let*
+        ((gradlew-path (flycheck-gradle--find-gradlew-executable)))
+      (flycheck-gradle--async-shell-command-to-string
+       (format "%s -v" gradlew-path)
+       (lambda (result)
+         (let ((major-version (string-to-number
+                               (substring (caddr (split-string result)) 0 1))))
+           (with-current-buffer buffer
+             (if (>= major-version 3)
+                 (progn
+                   (setq-local flycheck-gradle-java-log-level "warn")
+                   (setq-local flycheck-gradle-kotlin-log-level "warn"))
+               (setq-local flycheck-gradle-java-log-level "quiet")
+               (setq-local flycheck-gradle-kotlin-log-level "quiet")))))))))
+
+(defun flycheck-gradle--async-shell-command-to-string (command callback)
+  "Execute shell command COMMAND asynchronously in the background.
+Return the temporary output buffer which command is writing to
+during execution.
+When the command is finished, call CALLBACK with the resulting
+output as a string."
+  (let ((output-buffer (generate-new-buffer " *temp*")))
+    (set-process-sentinel
+     (start-process "Shell" output-buffer shell-file-name shell-command-switch command)
+     (lambda (process _signal)
+       (when (memq (process-status process) '(exit signal))
+         (with-current-buffer output-buffer
+           (let ((output-string
+                  (buffer-substring-no-properties
+                   (point-min)
+                   (point-max))))
+             (funcall callback output-string)))
+         (kill-buffer output-buffer))))
+    output-buffer))
 
 ;; Compile Target Functions
 (defun flycheck-gradle-compile->build ()

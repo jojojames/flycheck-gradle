@@ -15,6 +15,8 @@
      (add-hook x #'flycheck-gradle-setup))
    '(java-mode-hook kotlin-mode-hook)))
   #+end_src
+* Configuration
+  ~flycheck-gradle-adjust-log-level-automatically~ - Set this to true to automatically set gradle log levels.
 * Screenshots
 ** Kotlin
    [[./screenshots/kotlin.png]]
