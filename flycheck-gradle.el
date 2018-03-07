@@ -284,5 +284,21 @@ output as a string."
         `(,cmd)
       `("clean" ,cmd))))
 
+(defun flycheck-gradle-java-compile->android ()
+  "Target gradle compile for android java."
+  (let ((cmd
+         (cond
+          ((and buffer-file-name
+                (string-match-p "androidTest" buffer-file-name))
+           "compileDebugAndroidTestSources")
+          ((and buffer-file-name
+                (string-match-p "test" buffer-file-name))
+           "compileDebugUnitTestSources")
+          (:default
+           "compileDebugSources"))))
+    (if (flycheck-has-current-errors-p 'error)
+        `(,cmd)
+      `("clean" ,cmd))))
+
 (provide 'flycheck-gradle)
 ;;; flycheck-gradle.el ends here
