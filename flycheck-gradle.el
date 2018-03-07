@@ -198,11 +198,10 @@ a gradle project."
   (when (and (memq major-mode flycheck-gradle-modes)
              (flycheck-gradle--gradle-available-p))
     (flycheck-gradle-if-let*
-        ((gradlew-path (flycheck-gradle--find-gradlew-executable))
-         (gradlew-expanded-path (expand-file-name gradlew-path)))
+        ((gradlew-path (flycheck-gradle--find-gradlew-executable)))
         (progn
-          (setq flycheck-gradle-java-executable gradlew-expanded-path)
-          (setq flycheck-gradle-kotlin-executable gradlew-expanded-path))
+          (setq flycheck-gradle-java-executable gradlew-path)
+          (setq flycheck-gradle-kotlin-executable gradlew-path))
       (setq flycheck-gradle-java-executable "gradle")
       (setq flycheck-gradle-kotlin-executable "gradle"))))
 
@@ -210,7 +209,8 @@ a gradle project."
   "Return path containing gradlew, if it exists."
   (flycheck-gradle-when-let*
       ((path (locate-dominating-file buffer-file-name "gradlew")))
-    (concat path "gradlew")))
+    (expand-file-name
+     (concat path "gradlew"))))
 
 ;; Compile Target Functions
 (defun flycheck-gradle-compile->build ()
