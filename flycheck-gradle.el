@@ -191,7 +191,7 @@ This needs to be set before `flycheck-gradle-setup' is called."
     (if (memq 'meghanada-live flycheck-checkers)
         ;; `flycheck-gradle-java' checker will go first.
         (flycheck-add-next-checker 'gradle-java 'meghanada-live)
-      (with-eval-after-load 'meghanada
+      (with-eval-after-load 'flycheck-meghanada
         ;; `flycheck-java' will go first.
         (flycheck-add-next-checker 'meghanada-live 'gradle-java))))
 
