@@ -112,6 +112,21 @@ This needs to be set before `flycheck-gradle-setup' is called."
   :type '(repeat (string :tag "Flags"))
   :safe #'flycheck-string-list-p)
 
+(defun flycheck-gradle--verify (checker targets)
+  "Return list of `flycheck-verification-result' for CHECKER using TARGETS."
+  (let ((gradle (flycheck-checker-executable checker))
+	(default-directory (flycheck-gradle--find-gradle-project-directory checker)))
+    (mapcar  (lambda (target)
+	       (let ((success (eq 0 (call-process gradle nil nil nil
+						  "-quiet"
+						  "--console"
+						  "plain" "--dry-run" target))))
+		 (flycheck-verification-result-new
+		  :label target
+		  :message (if success "present" "missing")
+		  :face (if success 'success '(bold error)))))
+	     targets)))
+
 (flycheck-define-checker gradle-kotlin
   "Flycheck plugin for for Gradle."
   :command ("./gradlew"
@@ -127,6 +142,8 @@ This needs to be set before `flycheck-gradle-setup' is called."
    ;; w: /kotlin/MainActivity.kt: (12, 13): Variable 'a' is never used
    (warning line-start "w: " (file-name) ": (" line ", " column "): "
             (message) line-end))
+  :verify (lambda (checker)
+	    (flycheck-gradle--verify checker (funcall flycheck-gradle-kotlin-compile-function)))
   :modes (kotlin-mode)
   :predicate
   (lambda ()
@@ -147,6 +164,8 @@ This needs to be set before `flycheck-gradle-setup' is called."
   (;; /java/MainActivity.java:11: error: ';' expected setContentView(R.layout.activity_main)
    (error line-start (file-name) ":" line ": error: " (message) line-end))
   :modes (java-mode)
+  :verify (lambda (checker)
+	    (flycheck-gradle--verify checker (funcall flycheck-gradle-java-compile-function)))
   :predicate
   (lambda ()
     (funcall #'flycheck-gradle--gradle-available-p))
