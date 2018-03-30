@@ -116,16 +116,21 @@ This needs to be set before `flycheck-gradle-setup' is called."
   "Return list of `flycheck-verification-result' for CHECKER using TARGETS."
   (let ((gradle (flycheck-checker-executable checker))
 	(default-directory (flycheck-gradle--find-gradle-project-directory checker)))
-    (mapcar  (lambda (target)
-	       (let ((success (eq 0 (call-process gradle nil nil nil
-						  "-quiet"
-						  "--console"
-						  "plain" "--dry-run" target))))
-		 (flycheck-verification-result-new
-		  :label target
-		  :message (if success "present" "missing")
-		  :face (if success 'success '(bold error)))))
-	     targets)))
+    (cons (flycheck-verification-result-new
+	   :label "project dir"
+	   :message (or default-directory "not found")
+	   :face (if default-directory 'success '(bold error)))
+	  (when default-directory
+	    (mapcar (lambda (target)
+		      (let ((success (eq 0 (call-process gradle nil nil nil
+							 "-quiet"
+							 "--console"
+							 "plain" "--dry-run" target))))
+			(flycheck-verification-result-new
+			 :label target
+			 :message (if success "present" "missing")
+			 :face (if success 'success '(bold error)))))
+		    targets)))))
 
 (flycheck-define-checker gradle-kotlin
   "Flycheck plugin for for Gradle."
