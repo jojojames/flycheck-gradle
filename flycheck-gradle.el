@@ -308,6 +308,17 @@ output as a string."
         `(,cmd)
       `("clean" ,cmd))))
 
+(defun flycheck-gradle-java-compile->compile ()
+  "Target gradle compile for java."
+  (let ((cmd (if (and
+                  buffer-file-name
+                  (string-match-p "test" buffer-file-name))
+                 "compileTestJava"
+               "compileJava")))
+    (if (flycheck-has-current-errors-p 'error)
+        `(,cmd)
+      `("clean" ,cmd))))
+
 (defun flycheck-gradle-java-compile->android ()
   "Target gradle compile for android java."
   (let ((cmd
