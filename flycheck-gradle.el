@@ -302,8 +302,8 @@ output as a string."
   (let ((cmd (if (and
                   buffer-file-name
                   (string-match-p "test" buffer-file-name))
-                 "compileDebugUnitTestKotlin"
-               "compileReleaseKotlin")))
+                 "compileTestKotlin"
+               "compileKotlin")))
     (if (flycheck-has-current-errors-p 'error)
         `(,cmd)
       `("clean" ,cmd))))
