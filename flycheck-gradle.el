@@ -293,6 +293,7 @@ output as a string."
 (defun flycheck-gradle-android-project-p ()
   "Detect if Android project."
   (or
+   (bound-and-true-p android-mode)
    (locate-dominating-file buffer-file-name "AndroidManifest.xml")
    (ignore-errors
      (file-exists-p (concat (car (split-string default-directory "src"))
