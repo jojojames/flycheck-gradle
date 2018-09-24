@@ -73,7 +73,7 @@ versions below 3 so it's safer choice to use error."
   :type 'string
   :group 'flycheck)
 
-(defcustom flycheck-gradle-kotlin-compile-function 'flycheck-gradle-kotlin-compile->compile
+(defcustom flycheck-gradle-kotlin-compile-function 'flycheck-gradle-kotlin-compile->smart
   "Function used to find build command for gradle.
 
 ex. `flycheck-gradle-kotlin-compile->compile' may return '\(\"clean\" \"build\"\)
@@ -315,6 +315,23 @@ output as a string."
     (if (flycheck-has-current-errors-p 'error)
         `(,cmd)
       `("clean" ,cmd))))
+
+(defun flycheck-gradle-kotlin-compile->compile-android ()
+  "Target gradle compile for kotlin android."
+  (let ((cmd (if (and
+                  buffer-file-name
+                  (string-match-p "test" buffer-file-name))
+                 "compileDebugUnitTestKotlin"
+               "compileReleaseKotlin")))
+    (if (flycheck-has-current-errors-p 'error)
+        `(,cmd)
+      `("clean" ,cmd))))
+
+(defun flycheck-gradle-kotlin-compile->smart ()
+  "Conditionally compile kotlin."
+  (if (flycheck-gradle-android-project-p)
+      (flycheck-gradle-kotlin-compile->compile-android)
+    (flycheck-gradle-kotlin-compile->compile)))
 
 (defun flycheck-gradle-java-compile->compile ()
   "Target gradle compile for java."
