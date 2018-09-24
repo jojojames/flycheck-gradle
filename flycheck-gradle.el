@@ -290,6 +290,14 @@ output as a string."
          (kill-buffer output-buffer))))
     output-buffer))
 
+(defun flycheck-gradle-android-project-p ()
+  "Detect if Android project."
+  (or
+   (locate-dominating-file buffer-file-name "AndroidManifest.xml")
+   (ignore-errors
+     (file-exists-p (concat (car (split-string default-directory "src"))
+                            "src/main/AndroidManifest.xml")))))
+
 ;; Compile Target Functions
 (defun flycheck-gradle-compile->build ()
   "Target gradle build."
