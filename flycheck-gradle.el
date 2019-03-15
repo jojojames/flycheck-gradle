@@ -224,14 +224,17 @@ This needs to be set before `flycheck-gradle-setup' is called."
   (or
    (locate-dominating-file buffer-file-name "gradlew")
    (locate-dominating-file buffer-file-name "settings.gradle")
-   (locate-dominating-file buffer-file-name "build.gradle")))
+   (locate-dominating-file buffer-file-name "build.gradle")
+   (locate-dominating-file buffer-file-name "build.gradle.kts")))
 
 (defun flycheck-gradle--find-build-gradle-file ()
   "Return whether or not a build.gradle file can be found.
 
 We use the presence of a build.gradle file to infer that this project is
 a gradle project."
-  (locate-dominating-file buffer-file-name "build.gradle"))
+  (or
+   (locate-dominating-file buffer-file-name "build.gradle")
+   (locate-dominating-file buffer-file-name "build.gradle.kts")))
 
 (defun flycheck-gradle--set-flychecker-executable ()
   "Set `flycheck-gradle' executable according to gradle location."
